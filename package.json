@@ -1,0 +1,9 @@
+{
+  "name": "byse-extractor",
+  "version": "1.0.0",
+  "description": "Byse Video Extractor",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Byse Extractor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 20px;
+      padding: 40px;
+      width: 90%;
+      max-width: 550px;
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    h1 { text-align: center; font-size: 2em; margin-bottom: 5px;
+      background: linear-gradient(90deg, #00f5ff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .sub { text-align: center; color: #888; margin-bottom: 25px; font-size: 13px; }
+    .input-wrap { display: flex; gap: 10px; margin-bottom: 15px; }
+    input {
+      flex: 1; padding: 14px 18px; border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 12px; background: rgba(0,0,0,0.4); color: #fff;
+      font-size: 15px; direction: ltr; text-align: left;
+    }
+    input:focus { outline: none; border-color: #00f5ff; }
+    input::placeholder { color: #555; }
+    button {
+      padding: 14px 28px; border: none; border-radius: 12px;
+      background: linear-gradient(90deg, #00f5ff, #a855f7);
+      color: #fff; font-size: 15px; font-weight: bold; cursor: pointer;
+      transition: transform 0.2s;
+    }
+    button:hover { transform: scale(1.05); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .result {
+      margin-top: 20px; padding: 18px; border-radius: 12px;
+      background: rgba(0,0,0,0.3); display: none;
+    }
+    .result.show { display: block; }
+    .result.ok { border: 1px solid #22c55e; }
+    .result.err { border: 1px solid #ef4444; }
+    .result h3 { margin-bottom: 10px; font-size: 16px; }
+    .result.ok h3 { color: #22c55e; }
+    .result.err h3 { color: #ef4444; }
+    .link {
+      background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px;
+      word-break: break-all; font-family: monospace; font-size: 12px;
+      direction: ltr; text-align: left; margin-top: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .copy-btn {
+      margin-top: 10px; padding: 8px 20px; background: rgba(34,197,94,0.2);
+      border: 1px solid #22c55e; border-radius: 8px; color: #22c55e;
+      cursor: pointer; font-size: 13px;
+    }
+    .copy-btn:hover { background: rgba(34,197,94,0.3); }
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%; border-top-color: #00f5ff;
+      animation: spin 0.8s linear infinite; margin-left: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .examples { margin-top: 20px; font-size: 12px; color: #666; }
+    .examples a { color: #00f5ff; text-decoration: none; display: block; margin: 4px 0; }
+    .examples a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🎬 Byse Extractor</h1>
+    <p class="sub">استخراج روابط تشغيل الفيديو</p>
+
+    <form id="f">
+      <div class="input-wrap">
+        <input type="text" id="url" placeholder="https://byseraguci.com/e/xxxxxxx" required>
+        <button type="submit" id="btn">استخراج</button>
+      </div>
+    </form>
+
+    <div class="examples">
+      <p>💡 جرب:</p>
+      <a href="?url=https://byseraguci.com/e/6770ax3cj12f">byseraguci.com/e/6770ax3cj12f</a>
+      <a href="?url=https://bysesayeveum.com/e/skuqww0otpnt">bysesayeveum.com/e/skuqww0otpnt</a>
+    </div>
+
+    <div id="r" class="result">
+      <h3 id="rt"></h3>
+      <div class="link" id="rl"></div>
+      <button class="copy-btn" onclick="copy()">📋 نسخ</button>
+    </div>
+  </div>
+
+  <script>
+    const p = new URLSearchParams(location.search);
+    if (p.get('url')) { document.getElementById('url').value = p.get('url'); document.getElementById('f').dispatchEvent(new Event('submit')); }
+
+    document.getElementById('f').addEventListener('submit', async e => {
+      e.preventDefault();
+      const url = document.getElementById('url').value.trim();
+      if (!url) return;
+      const btn = document.getElementById('btn');
+      const r = document.getElementById('r');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> جاري...';
+      r.className = 'result';
+      try {
+        const res = await fetch('/api/extract', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const d = await res.json();
+        if (d.success && d.urls?.length) {
+          r.className = 'result ok show';
+          document.getElementById('rt').textContent = '✅ تم بنجاح!';
+          document.getElementById('rl').textContent = d.urls[0];
+        } else {
+          r.className = 'result err show';
+          document.getElementById('rt').textContent = '❌ خطأ';
+          document.getElementById('rl').textContent = d.error || 'فشل';
+        }
+      } catch (err) {
+        r.className = 'result err show';
+        document.getElementById('rt').textContent = '❌ خطأ في الاتصال';
+        document.getElementById('rl').textContent = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'استخراج';
+      }
+    });
+
+    function copy() {
+      const t = document.getElementById('rl').textContent;
+      navigator.clipboard.writeText(t);
+      const b = document.querySelector('.copy-btn');
+      b.textContent = '✅ تم النسخ!';
+      setTimeout(() => b.textContent = '📋 نسخ', 2000);
+    }
+  </script>
+</body>
+</html>
